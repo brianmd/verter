@@ -57,7 +57,7 @@
     :as opts}]
   (let [sql (-> queries
                 :find-facts-up-to
-                (q/with-params {:key (str id)
+                (q/with-params {:key (v/->verter-id id)
                                 :schema {:as schema}}))]
     (->> (jdbc/execute! ds [sql upto]
                         {:return-keys true :builder-fn jdbcr/as-unqualified-lower-maps})

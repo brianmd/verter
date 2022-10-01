@@ -24,12 +24,14 @@
     (^void funnel [_ obj ^PrimitiveSink sink]
       (.putBytes sink (nippy/freeze obj)))))
 
-(defn hash-it [obj]
-  (let [murmur (Hashing/murmur3_128)
+(defn hash-it [str-id obj]
+  "the id might not be part of obj, so join them to ensure a unique hash. Otherwise, the same object stored under the different ids will resolve to the same hash, and the facts/transaction join will result in additional rows"
+  (let [id-obj [str-id obj]
+        murmur (Hashing/murmur3_128)
         h (try
-            (hasher/clj-hash murmur obj)
+            (hasher/clj-hash murmur id-obj)
             (catch Exception e
-              (hasher/hash-obj murmur nippy-funnel obj)))]
+              (hasher/hash-obj murmur nippy-funnel id-obj)))]
     (str h)))
 
 (defn now []
@@ -56,8 +58,10 @@
           [(f k) v])))
 
 (defn value? [v]
-  (or (number? v)
-      (keyword? v)
+  (or (keyword? v)
+      (number? v)
+      (symbol? v)
+      (uuid? v)
       (seq v)))
 
 (defn to-multi-queries [q]

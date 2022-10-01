@@ -24,6 +24,16 @@
                      :obliterate-identity]
                     {:path (str "verter/store/" store)}))
 
+(defn ->verter-id
+  "serialize an id to a string verter id able to be stored in a database. Inverse of `verter-id->`"
+  [id]
+  (pr-str id))
+
+(defn verter-id->
+  "deserialize a string id back into a verter id. Inverse of `->verter-id`"
+  [id]
+  (edn/read-string id))
+
 (defn validate-fact
   ;; will have more and most like will use metosin/malli
   [{:keys [verter/id] :as fact}]
@@ -45,15 +55,16 @@
   (let [[{:keys [verter/id] :as fact} _] (normalize-fact fact)
         _ (validate-fact fact)
         fval (dissoc fact :verter/id)]
-    [(str id)
-     (nippy/freeze fval)
-     (vt/hash-it fact)]))
+    (let [id' (->verter-id id)]
+      [id'
+       (nippy/freeze fval)
+       (vt/hash-it id' fact)])))
 
 (defn to-tx-row [tx-id tx-time fact]
   (let [[{:keys [verter/id] :as fact} at] (normalize-fact tx-time fact)
         business-time (or at tx-time)]
     [tx-id
-     (vt/hash-it fact)
+     (vt/hash-it (->verter-id id) fact)
      business-time
      tx-time]))
 
@@ -61,7 +72,7 @@
                  :or {with-tx? false}}
                 {:keys [key value business_time tx_time tx_id]}]
   (let [v (nippy/thaw value)
-        fact (assoc v :verter/id (edn/read-string key)
+        fact (assoc v :verter/id (verter-id-> key)
                       :at business_time)]
     (if-not with-tx?
       fact
