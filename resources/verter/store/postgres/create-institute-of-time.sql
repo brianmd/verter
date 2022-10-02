@@ -1,7 +1,7 @@
 create table if not exists :schema.facts (
 
     -- db sequence (pk) to handle order and facts with the same timestamp
-    id serial primary key,
+    id bigserial primary key,
 
     -- fact key "foo/bar/baz"
     key varchar not null,

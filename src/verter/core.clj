@@ -1,8 +1,10 @@
 (ns verter.core
   (:require [inquery.core :as q]
             [taoensso.nippy :as nippy]
-            [clojure.edn :as edn]
             [verter.tools :as vt]))
+
+(def ->verter-id vt/->verter-id)
+(def verter-id-> vt/verter-id->)
 
 (defprotocol Identity
   (facts [this id]
@@ -23,16 +25,6 @@
                      :add-facts
                      :obliterate-identity]
                     {:path (str "verter/store/" store)}))
-
-(defn ->verter-id
-  "serialize an id to a string verter id able to be stored in a database. Inverse of `verter-id->`"
-  [id]
-  (pr-str id))
-
-(defn verter-id->
-  "deserialize a string id back into a verter id. Inverse of `->verter-id`"
-  [id]
-  (edn/read-string id))
 
 (defn validate-fact
   ;; will have more and most like will use metosin/malli
@@ -55,16 +47,15 @@
   (let [[{:keys [verter/id] :as fact} _] (normalize-fact fact)
         _ (validate-fact fact)
         fval (dissoc fact :verter/id)]
-    (let [id' (->verter-id id)]
-      [id'
-       (nippy/freeze fval)
-       (vt/hash-it id' fact)])))
+    [(->verter-id id)
+     (nippy/freeze fval)
+     (vt/hash-it fact)]))
 
 (defn to-tx-row [tx-id tx-time fact]
   (let [[{:keys [verter/id] :as fact} at] (normalize-fact tx-time fact)
         business-time (or at tx-time)]
     [tx-id
-     (vt/hash-it (->verter-id id) fact)
+     (vt/hash-it fact)
      business-time
      tx-time]))
 

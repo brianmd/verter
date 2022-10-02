@@ -1,11 +1,22 @@
 (ns verter.tools
   (:require [cljhash.core :as hasher]
             [clojure.string :as s]
+            [clojure.edn :as edn]
             [calip.core :as calip]
             [taoensso.nippy :as nippy])
   (:import [com.google.common.hash Hashing
                                    Funnel
                                    PrimitiveSink]))
+
+(defn ->verter-id
+  "serialize an id to a string verter id able to be stored in a database. Inverse of `verter-id->`"
+  [id]
+  (pr-str id))
+
+(defn verter-id->
+  "deserialize a string id back into a verter id. Inverse of `->verter-id`"
+  [id]
+  (edn/read-string id))
 
 (defn measure-it
   ([fns]
@@ -24,9 +35,12 @@
     (^void funnel [_ obj ^PrimitiveSink sink]
       (.putBytes sink (nippy/freeze obj)))))
 
-(defn hash-it [str-id obj]
-  "the id might not be part of obj, so join them to ensure a unique hash. Otherwise, the same object stored under the different ids will resolve to the same hash, and the facts/transaction join will result in additional rows"
-  (let [id-obj [str-id obj]
+(defn hash-it [obj]
+  "create a hash of obj"
+  ;; when :verter/id is left as a regular id, the same hash is created for
+  ;; ids :abc, 'abc, and "abc". By converting :verter/id to a string,
+  ;; unique hashes will be created
+  (let [id-obj (assoc obj :verter/id (->verter-id (:verter/id obj)))
         murmur (Hashing/murmur3_128)
         h (try
             (hasher/clj-hash murmur id-obj)
