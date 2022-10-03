@@ -6,13 +6,15 @@
 
 (t/use-fixtures :each (partial tt/with-db "multiverse"))
 
-(def test-ids [:universe/one 123
-               :abc
+(def test-ids [:universe/one
                [1 :a "a"]
+               123
+               "123"
+               "123abc"
+               :abc
                "abc"
                'abc
-               #uuid "5f62d4c0-c5ca-4431-ac33-610825f9ef36"
-               ])
+               #uuid "5f62d4c0-c5ca-4431-ac33-610825f9ef36"])
 
 (deftest should-connect-to-db
   (is (tt/is-connected tt/conn)))
